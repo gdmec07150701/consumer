@@ -6,7 +6,8 @@ namespace App\Process;
 use Hyperf\Process\AbstractProcess;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\DbConnection\Db;
-
+use PHPExcel;
+use PHPExcel_IOFactory;
 
 class ConsumerProcess extends AbstractProcess
 {
@@ -14,7 +15,7 @@ class ConsumerProcess extends AbstractProcess
      * 进程数量
      * @var int
      */
-    public $nums = 2;
+    public $nums = 10;
 
     /**
      * 进程名称
@@ -42,18 +43,20 @@ class ConsumerProcess extends AbstractProcess
 
     public function handle(): void
     {
-        // 您的代码 ...
-
         $container = ApplicationContext::getContainer();
-
         $redis = $container->get(\Redis::class);
         while (true) {
-            $count = $redis->llen('wait');
-
+            $count = $redis->llen('canConsumer');
             if ($count > 0) {
-                $val = $redis->lPop('wait');
+                $val = $redis->lPop('canConsumer');
                 if($val){
-                    Db::table('wait')->insert(unserialize($val));
+                    $insertData = $redis->lPop($val);
+                    if($insertData){
+                        Db::table(substr($val, 0 , strrpos($val,".")))->insert(unserialize($insertData));
+                        $redis->rpush('canConsumer', $val);
+                    }
+                }else{
+                    echo '进程跑空咯';
                 }
             }
         }
