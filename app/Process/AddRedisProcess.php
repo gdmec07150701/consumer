@@ -8,9 +8,20 @@ use Hyperf\Utils\ApplicationContext;
 use Hyperf\DbConnection\Db;
 use PHPExcel;
 use PHPExcel_IOFactory;
+use Hyperf\Database\Schema\Schema;
+use Hyperf\Di\Annotation\Inject;
+use Hyperf\WebSocketClient\ClientFactory;
+use Hyperf\WebSocketClient\Frame;
+
 
 class AddRedisProcess extends AbstractProcess
 {
+    /**
+     * @Inject
+     * @var ClientFactory
+     */
+    protected $clientFactory;
+
     /**
      * 进程数量
      * @var int
@@ -49,17 +60,44 @@ class AddRedisProcess extends AbstractProcess
         $redis = $container->get(\Redis::class);
         $waitFile = $redis->lPop('waitFile');
         if($waitFile){
-            $fileName = '/www/wwwroot/f2m/storage/upload/2019-11-25/'.$waitFile;
-            $data = $this->excelToArray($fileName);
-            $allData = array_chunk($data,999);
-            $listKey = $waitFile.date('YmdHis');
-            var_dump($listKey);
-            foreach ($allData as $k1 => $v1){
-                $redis->rpush($listKey, serialize($v1));
+            $waitFile = unserialize($waitFile);
+            $fileName = '/www/wwwroot/f2m/storage/upload/'.date('Y-m-d').'/'.$waitFile['fileName'];
+            var_dump('开始转array'.date('H:i:s'));
+            list($data,$col) = $this->excelToArray($fileName);
+            var_dump('结束转'.date('H:i:s'));
+            $tableName = substr($waitFile['fileName'], 0 , strrpos($waitFile['fileName'],"."));
+            $res = $this->createTable($tableName, $col, $waitFile);
+            if($res){
+                $allData = array_chunk($data,2000);
+                $listKey = $waitFile['fileName'].date('YmdHis');
+                foreach ($allData as $k1 => $v1){
+                    var_dump('插入到redis:'.$listKey);
+                    $redis->rpush($listKey, serialize($v1));
+                }
+                $redis->rpush('canConsumer', serialize(array('listKey' => $listKey, 'frameId' => $waitFile['frameId'])));
             }
-            $redis->rpush('canConsumer', $listKey);
         }
     }
+
+    public function createTable($tableName, $col, $waitFile){
+        $host = '127.0.0.1:9502';
+        $client = $this->clientFactory->create($host);
+        try{
+            Schema::create($tableName, function ($table) use ($col) {
+                $table->increments('id');
+                foreach ($col as $k => $v){
+                    $table->string($v)->default('')->nullable();
+                }
+            });
+            $client->push(json_encode(array('from' => 'server', 'toFrameId' => $waitFile['frameId'], 'msg' => date('H:i:s',time()).$tableName.'建表成功')));
+            return true;
+        }catch (\Exception $e){
+
+            $client->push(json_encode(array('from' => 'server', 'toFrameId' => $waitFile['frameId'], 'msg' => $tableName.'已存在')));
+            return false;
+        }
+    }
+
 
     public function excelToArray($fileName){
         $excel = PHPExcel_IOFactory::load($fileName);
@@ -86,6 +124,6 @@ class AddRedisProcess extends AbstractProcess
                 $data[] = $tmp;
             }
         }
-        return $data;
+        return array($data, $firstCol);
     }
 }

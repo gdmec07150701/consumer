@@ -6,16 +6,24 @@ namespace App\Process;
 use Hyperf\Process\AbstractProcess;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\DbConnection\Db;
-use PHPExcel;
-use PHPExcel_IOFactory;
+use Hyperf\Di\Annotation\Inject;
+use Hyperf\WebSocketClient\ClientFactory;
+use Hyperf\WebSocketClient\Frame;
 
 class ConsumerProcess extends AbstractProcess
 {
+
+    /**
+     * @Inject
+     * @var ClientFactory
+     */
+    protected $clientFactory;
+
     /**
      * 进程数量
      * @var int
      */
-    public $nums = 10;
+    public $nums = 3;
 
     /**
      * 进程名称
@@ -48,15 +56,22 @@ class ConsumerProcess extends AbstractProcess
         while (true) {
             $count = $redis->llen('canConsumer');
             if ($count > 0) {
-                $val = $redis->lPop('canConsumer');
-                if($val){
-                    $insertData = $redis->lPop($val);
+                $canConsumers = $redis->lRange('canConsumer', 0 , 10);
+                foreach ($canConsumers as $k => $val){
+                    $canItem = unserialize($val);
+                    $insertData = $redis->lPop($canItem['listKey']);
                     if($insertData){
-                        Db::table(substr($val, 0 , strrpos($val,".")))->insert(unserialize($insertData));
-                        $redis->rpush('canConsumer', $val);
+                        Db::table(substr($canItem['listKey'], 0 , strrpos($canItem['listKey'],".")))->insert(unserialize($insertData));
+                        if(!$redis->lLen($canItem['listKey']) && empty($redis->get('notice:'.$canItem['listKey']))){
+                            $redis->lRem('canConsumer',$val,0);
+                            $host = '127.0.0.1:9502';
+                            $client = $this->clientFactory->create($host);
+                            $msg = substr($canItem['listKey'], 0 , strrpos($canItem['listKey'],".")).'表成功创建';
+                            $client->push(json_encode(array('from' => 'server', 'toFrameId' => $canItem['frameId'], 'msg' => $msg)));
+                            $redis->set('notice:'.$canItem['listKey'], '1');
+                            $redis->expire('notice:'.$canItem['listKey'], 1000);
+                        }
                     }
-                }else{
-                    echo '进程跑空咯';
                 }
             }
         }
