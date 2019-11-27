@@ -100,7 +100,9 @@ class AddRedisProcess extends AbstractProcess
 
 
     public function excelToArray($fileName){
-        $excel = PHPExcel_IOFactory::load($fileName);
+        $objReader = PHPExcel_IOFactory::createReader('Excel2007');
+        $objReader->setReadDataOnly(true);
+        $excel = $objReader->load($fileName);
         $curSheet = $excel->getActiveSheet();
         $rows = $curSheet->getHighestRow();
         $cols = $curSheet->getHighestColumn();

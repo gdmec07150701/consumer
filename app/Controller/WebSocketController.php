@@ -17,7 +17,6 @@ class WebSocketController implements OnMessageInterface, OnOpenInterface, OnClos
     {
 
          $data = json_decode($frame->data, true);
-         var_dump($data);
          switch ($data['from']){
              case 'client':
                  if($data['act'] == 'open'){
