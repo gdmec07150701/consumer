@@ -46,7 +46,12 @@
         "hyperf/model-cache": "~1.1.0",
         "hyperf/tracer": "~1.1.0",
         "hyperf/websocket-server": "^1.1",
-        "phpoffice/phpexcel": "^1.8"
+        "phpoffice/phpexcel": "^1.8",
+        "hyperf/websocket-client": "^1.1",
+        "hyperf/view": "^1.1",
+        "duncan3dc/blade": "^4.8",
+        "hyperf/http-message": "^1.1",
+        "phpoffice/phpspreadsheet": "^1.10"
     },
     "require-dev": {
         "swoft/swoole-ide-helper": "^4.2",

@@ -12,8 +12,10 @@ declare(strict_types=1);
 
 use Hyperf\HttpServer\Router\Router;
 
-Router::addRoute(['GET', 'POST', 'HEAD'], '/', 'App\Controller\IndexController@index');
+Router::addRoute(['GET'], '/', 'App\Controller\IndexController@index');
+Router::addRoute(['POST'], '/', 'App\Controller\IndexController@store');
 Router::get('/get', 'App\Controller\IndexController@get');
+Router::get('/upload', 'App\Controller\IndexController@upload');
 
 Router::addServer('ws', function () {
     Router::get('/', 'App\Controller\WebSocketController');

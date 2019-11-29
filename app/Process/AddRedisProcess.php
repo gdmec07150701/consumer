@@ -7,11 +7,13 @@ use Hyperf\Process\AbstractProcess;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\DbConnection\Db;
 use PHPExcel;
-use PHPExcel_IOFactory;
 use Hyperf\Database\Schema\Schema;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\WebSocketClient\ClientFactory;
 use Hyperf\WebSocketClient\Frame;
+use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Reader\Xls;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 
 class AddRedisProcess extends AbstractProcess
@@ -54,14 +56,12 @@ class AddRedisProcess extends AbstractProcess
 
     public function handle(): void
     {
-        // 您的代码 ...
         $container = ApplicationContext::getContainer();
-
         $redis = $container->get(\Redis::class);
         $waitFile = $redis->lPop('waitFile');
         if($waitFile){
-            $waitFile = unserialize($waitFile);
-            $fileName = '/www/wwwroot/f2m/storage/upload/'.date('Y-m-d').'/'.$waitFile['fileName'];
+            $waitFile = json_decode($waitFile, true);
+            $fileName = BASE_PATH.'/storage/upload/'.$waitFile['fileName'];
             var_dump('开始转array'.date('H:i:s'));
             list($data,$col) = $this->excelToArray($fileName);
             var_dump('结束转'.date('H:i:s'));
@@ -72,7 +72,9 @@ class AddRedisProcess extends AbstractProcess
                 $listKey = $waitFile['fileName'].date('YmdHis');
                 foreach ($allData as $k1 => $v1){
                     var_dump('插入到redis:'.$listKey);
-                    $redis->rpush($listKey, serialize($v1));
+                    go(function () use ($redis, $listKey, $v1){
+                        $redis->rpush($listKey, serialize($v1));
+                    });
                 }
                 $redis->rpush('canConsumer', serialize(array('listKey' => $listKey, 'frameId' => $waitFile['frameId'])));
             }
@@ -100,9 +102,19 @@ class AddRedisProcess extends AbstractProcess
 
 
     public function excelToArray($fileName){
-        $objReader = PHPExcel_IOFactory::createReader('Excel2007');
-        $objReader->setReadDataOnly(true);
-        $excel = $objReader->load($fileName);
+        /** @var Xlsx $objRead */
+        $objRead = IOFactory::createReader('Xlsx');
+
+        if (!$objRead->canRead($fileName)) {
+            /** @var Xls $objRead */
+            $objRead = IOFactory::createReader('Xls');
+
+            if (!$objRead->canRead($fileName)) {
+                throw new \Exception('只支持导入Excel文件！');
+            }
+        }
+        $objRead->setReadDataOnly(true);
+        $excel = $objRead->load($fileName);
         $curSheet = $excel->getActiveSheet();
         $rows = $curSheet->getHighestRow();
         $cols = $curSheet->getHighestColumn();
