@@ -63,20 +63,31 @@ class AddRedisProcess extends AbstractProcess
             $waitFile = json_decode($waitFile, true);
             $fileName = BASE_PATH.'/storage/upload/'.$waitFile['fileName'];
             var_dump('开始转array'.date('H:i:s'));
-            list($data,$col) = $this->excelToArray($fileName);
+            list($data,$col, $rowLen) = $this->excelToArray($fileName);
             var_dump('结束转'.date('H:i:s'));
             $tableName = substr($waitFile['fileName'], 0 , strrpos($waitFile['fileName'],"."));
             $res = $this->createTable($tableName, $col, $waitFile);
             if($res){
                 $allData = array_chunk($data,2000);
                 $listKey = $waitFile['fileName'].date('YmdHis');
+                var_dump('插入到redis:'.$listKey);
+                $beginTime = time();
                 foreach ($allData as $k1 => $v1){
-                    var_dump('插入到redis:'.$listKey);
-                    go(function () use ($redis, $listKey, $v1){
+//                    go(function () use ($redis, $listKey, $v1){
+                        echo '插入中...';
                         $redis->rpush($listKey, serialize($v1));
-                    });
+//                    });
                 }
-                $redis->rpush('canConsumer', serialize(array('listKey' => $listKey, 'frameId' => $waitFile['frameId'])));
+               $redis->rpush('canConsumer', serialize(array('listKey' => $listKey, 'frameId' => $waitFile['frameId'])));
+                var_dump('完成了转换耗时:'.time()-$beginTime.'秒');
+
+//                $isContinue = true;
+//                while ($isContinue){
+//                    if($redis->lLen($listKey) >= $rowLen / 2000){
+//                        var_dump('完成了转换耗时:'.time()-$beginTime.'秒|'.$redis->lLen($listKey));
+//                        $isContinue = false;
+//                    }
+//                }
             }
         }
     }
@@ -138,6 +149,6 @@ class AddRedisProcess extends AbstractProcess
                 $data[] = $tmp;
             }
         }
-        return array($data, $firstCol);
+        return array($data, $firstCol, $rows);
     }
 }
