@@ -4,7 +4,7 @@
         <script src="/js/jquery-3.2.1.js"></script>
     </head>
     <body>
-        <a href="119.23.225.253:83">web高级vue</a>
+        <a href="http://119.23.225.253:83">web高级vue</a>
         <script type="text/javascript" src="/js/jquery.form.js"></script>
         <div style="display:flex;justify-content: center; align-items:center; width: 100%;height: 100%;border: 1px solid white;text-align:center;">
             <div>
