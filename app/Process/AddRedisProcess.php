@@ -79,7 +79,7 @@ class AddRedisProcess extends AbstractProcess
 //                    });
                 }
                $redis->rpush('canConsumer', serialize(array('listKey' => $listKey, 'frameId' => $waitFile['frameId'])));
-                var_dump('完成了转换耗时:'.time()-$beginTime.'秒');
+                var_dump('完成了转换耗时:'.(time()-$beginTime).'秒');
 
 //                $isContinue = true;
 //                while ($isContinue){
@@ -151,4 +151,5 @@ class AddRedisProcess extends AbstractProcess
         }
         return array($data, $firstCol, $rows);
     }
+
 }

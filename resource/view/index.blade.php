@@ -2,6 +2,7 @@
 <script src="/js/jquery-3.2.1.js"></script>
 
 <!--ajax提交表单需要引入jquery.form.js-->
+<a href=":83">web高级</a>
 <script type="text/javascript" src="/js/jquery.form.js"></script>
 <div style="display:flex;justify-content: center; align-items:center; width: 100%;height: 100%;border: 1px solid white;text-align:center;">
     <div>
