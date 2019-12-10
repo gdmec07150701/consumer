@@ -9,7 +9,7 @@
         <div style="display:flex;justify-content: center; align-items:center; width: 100%;height: 100%;border: 1px solid white;text-align:center;">
             <div>
                 <span style="line-height: 50px">ExcelToMysql</span>
-                <form action="" method="post" enctype="multipart/form-data" id="ajaxForm">
+                <form action="/index/store" method="post" enctype="multipart/form-data" id="ajaxForm">
                     <input type="text" name="frameId" id="frameId">
                     <input type="file" name="excel" required>
                     <input type="submit" id="ajaxSubmit">

@@ -34,7 +34,7 @@ class WebSocketController implements OnMessageInterface, OnOpenInterface, OnClos
 
     public function onClose(Server $server, int $fd, int $reactorId): void
     {
-        var_dump('closed');
+//        var_dump('closed');
     }
 
     public function onOpen(WebSocketServer $server, Request $request): void

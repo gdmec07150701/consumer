@@ -11,6 +11,7 @@ declare(strict_types=1);
  */
 
 return [
-    \App\Process\ConsumerProcess::class,
-    \App\Process\AddRedisProcess::class,
+//    \App\Process\ConsumerProcess::class,
+//    \App\Process\AddRedisProcess::class,
+    \App\Process\ContinueProcess::class,
 ];
